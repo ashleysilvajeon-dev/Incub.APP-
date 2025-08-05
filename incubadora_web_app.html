@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥚 Control de Incubadora Automática</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: 2px solid #f1f2f6;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.4em;
+        }
+
+        .card h3 .emoji {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .species-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .species-btn {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .species-btn:hover {
+            background: linear-gradient(135deg, #0984e3, #74b9ff);
+            transform: scale(1.05);
+        }
+
+        .species-btn.selected {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            box-shadow: 0 5px 15px rgba(0, 184, 148, 0.4);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .status-item {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: #2d3436;
+        }
+
+        .status-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            grid-column: 1 / -1;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .notification-area {
+            grid-column: 1 / -1;
+            background: #2d3436;
+            color: #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notification {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .bluetooth-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #e17055;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            z-index: 1000;
+        }
+
+        .bluetooth-status.connected {
+            background: #00b894;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .species-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bluetooth-status" id="bluetoothStatus">
+        🔴 Bluetooth Desconectado
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🥚 Incubadora Automática IA</h1>
+            <p>Sistema Inteligente de Control de Eclosión</p>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <h3><span class="emoji">🐣</span>Selección de Especies</h3>
+                <div class="species-grid" id="speciesGrid">
+                    <!-- Las especies se cargarán dinámicamente -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><span class="emoji">📊</span>Estado Actual</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="temperature">--°C</div>
+                        <div>🌡️ Temperatura</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="humidity">--%</div>
+                        <div>💨 Humedad</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="currentDay">--</div>
+                        <div>📅 Día Actual</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="totalDays">--</div>
+                        <div>⏰ Total Días</div>
+                    </div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <p style="text-align: center; margin-top: 10px;">Progreso de Incubación</p>
+            </div>
+
+            <div class="card controls">
+                <h3><span class="emoji">🎮</span>Controles</h3>
+                <div class="control-buttons">
+                    <button class="control-btn" onclick="connectBluetooth()">📱 Conectar Bluetooth</button>
+                    <button class="control-btn" onclick="requestStatus()">📊 Estado Sistema</button>
+                    <button class="control-btn" onclick="manualFlip()">🔄 Volteo Manual</button>
+                    <button class="control-btn" onclick="showMenu()">📋 Ver Menú</button>
+                    <button class="control-btn" onclick="emergencyStop()">🚨 Parada Emergencia</button>
+                    <button class="control-btn" onclick="clearNotifications()">🗑️ Limpiar Log</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><span class="emoji">📱</span>Notificaciones en Tiempo Real</h3>
+                <div class="notification-area" id="notifications">
+                    <div class="notification">🚀 Sistema iniciado - Listo para recibir comandos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos de especies
+        const especies = [
+            {nombre: "Pato", emoji: "🦆", dias: 28, tempMin: 37.2, tempMax: 37.8},
+            {nombre: "Gallina", emoji: "🐔", dias: 21, tempMin: 37.5, tempMax: 38.0},
+            {nombre: "Codorniz", emoji: "🐦", dias: 17, tempMin: 37.7, tempMax: 38.2},
+            {nombre: "Cóndor Andino", emoji: "🦅", dias: 58, tempMin: 36.8, tempMax: 37.5},
+            {nombre: "Pájaro Negro", emoji: "🐦‍⬛", dias: 14, tempMin: 37.0, tempMax: 37.5},
+            {nombre: "Ñandú", emoji: "🦢", dias: 36, tempMin: 36.5, tempMax: 37.2},
+            {nombre: "Gaviotín Chico", emoji: "🕊️", dias: 24, tempMin: 37.2, tempMax: 37.8},
+            {nombre: "Pingüino Humboldt", emoji: "🐧", dias: 40, tempMin: 35.5, tempMax: 36.5}
+        ];
+
+        let selectedSpecies = 0;
+        let bluetoothDevice = null;
+        let characteristic = null;
+        let currentDay = 1;
+        let totalDays = 21;
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            createSpeciesButtons();
+            startSimulation();
+        });
+
+        function createSpeciesButtons() {
+            const grid = document.getElementById('speciesGrid');
+            grid.innerHTML = '';
+            
+            especies.forEach((especie, index) => {
+                const button = document.createElement('button');
+                button.className = 'species-btn';
+                button.innerHTML = `${especie.emoji}<br>${especie.nombre}<br>(${especie.dias} días)`;
+                button.onclick = () => selectSpecies(index);
+                
+                if (index === selectedSpecies) {
+                    button.classList.add('selected');
+                }
+                
+                grid.appendChild(button);
+            });
+        }
+
+        function selectSpecies(index) {
+            selectedSpecies = index;
+            totalDays = especies[index].dias;
+            
+            // Actualizar botones
+            createSpeciesButtons();
+            
+            // Actualizar display
+            updateDisplay();
+            
+            // Enviar comando a Arduino (si está conectado)
+            if (characteristic) {
+                sendCommand(`ESPECIE:${index}`);
+            }
+            
+            addNotification(`✅ Especie seleccionada: ${especies[index].nombre} ${especies[index].emoji}`);
+        }
+
+        async function connectBluetooth() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{name: 'HC-06'}],
+                    optionalServices: ['12345678-1234-1234-1234-123456789abc']
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('12345678-1234-1234-1234-123456789abc');
+                characteristic = await service.getCharacteristic('87654321-4321-4321-4321-cba987654321');
+
+                bluetoothDevice = device;
+                document.getElementById('bluetoothStatus').textContent = '🟢 Bluetooth Conectado';
+                document.getElementById('bluetoothStatus').classList.add('connected');
+                
+                addNotification('📱 Bluetooth conectado exitosamente');
+                
+                // Configurar notificaciones
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleNotification);
+                
+            } catch (error) {
+                addNotification('❌ Error conectando Bluetooth: ' + error.message);
+                console.error('Bluetooth error:', error);
+            }
+        }
+
+        function handleNotification(event) {
+            const value = new TextDecoder().decode(event.target.value);
+            addNotification(value);
+            
+            // Parsear datos si contienen información de estado
+            if (value.includes('Temp:') && value.includes('Humedad:')) {
+                parseStatusUpdate(value);
+            }
+        }
+
+        function parseStatusUpdate(message) {
+            const tempMatch = message.match(/Temp: ([\d.]+)°C/);
+            const humidityMatch = message.match(/Humedad: (\d+)%/);
+            const dayMatch = message.match(/Día: (\d+)\/(\d+)/);
+            
+            if (tempMatch) {
+                document.getElementById('temperature').textContent = tempMatch[1] + '°C';
+            }
+            if (humidityMatch) {
+                document.getElementById('humidity').textContent = humidityMatch[1] + '%';
+            }
+            if (dayMatch) {
+                currentDay = parseInt(dayMatch[1]);
+                totalDays = parseInt(dayMatch[2]);
+                updateDisplay();
+            }
+        }
+
+        async function sendCommand(command) {
+            if (characteristic) {
+                try {
+                    const encoder = new TextEncoder();
+                    await characteristic.writeValue(encoder.encode(command));
+                    addNotification(`📤 Comando enviado: ${command}`);
+                } catch (error) {
+                    addNotification('❌ Error enviando comando: ' + error.message);
+                }
+            } else {
+                addNotification('⚠️ Bluetooth no conectado');
+            }
+        }
+
+        function requestStatus() {
+            sendCommand('STATUS');
+        }
+
+        function manualFlip() {
+            sendCommand('VOLTEO');
+        }
+
+        function showMenu() {
+            sendCommand('MENU');
+        }
+
+        function emergencyStop() {
+            if (confirm('¿Está seguro que desea realizar una parada de emergencia?')) {
+                sendCommand('EMERGENCY_STOP');
+                addNotification('🚨 PARADA DE EMERGENCIA ACTIVADA');
+            }
+        }
+
+        function clearNotifications() {
+            document.getElementById('notifications').innerHTML = '';
+            addNotification('🗑️ Log de notificaciones limpiado');
+        }
+
+        function addNotification(message) {
+            const notifications = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            notification.innerHTML = `[${timestamp}] ${message}`;
+            
+            notifications.appendChild(notification);
+            notifications.scrollTop = notifications.scrollHeight;
+            
+            // Limitar a 50 notificaciones
+            while (notifications.children.length > 50) {
+                notifications.removeChild(notifications.firstChild);
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('currentDay').textContent = currentDay;
+            document.getElementById('totalDays').textContent = totalDays;
+            
+            const progress = (currentDay / totalDays) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            // Cambiar color según progreso
+            const progressFill = document.getElementById('progressFill');
+            if (progress < 50) {
+                progressFill.style.background = 'linear-gradient(135deg, #74b9ff, #0984e3)';
+            } else if (progress < 90) {
+                progressFill.style.background = 'linear-gradient(135deg, #fdcb6e, #e17055)';
+            } else {
+                progressFill.style.background = 'linear-gradient(135deg, #00b894, #00cec9)';
+            }
+        }
+
+        function startSimulation() {
+            // Simulación para demostración (cuando no hay Bluetooth real)
+            let simulatedTemp = 37.5;
+            let simulatedHumidity = 60;
+            
+            setInterval(() => {
+                if (!characteristic) {
+                    // Simular variaciones de temperatura y humedad
+                    simulatedTemp += (Math.random() - 0.5) * 0.2;
+                    simulatedHumidity += (Math.random() - 0.5) * 2;
+                    
+                    // Mantener en rangos realistas
+                    simulatedTemp = Math.max(35, Math.min(40, simulatedTemp));
+                    simulatedHumidity = Math.max(40, Math.min(80, simulatedHumidity));
+                    
+                    document.getElementById('temperature').textContent = simulatedTemp.toFixed(1) + '°C';
+                    document.getElementById('humidity').textContent = Math.round(simulatedHumidity) + '%';
+                }
+            }, 3000);
+            
+            // Simular progreso de días
+            setInterval(() => {
+                if (currentDay < totalDays) {
+                    currentDay += 0.01; // Incremento muy pequeño para demo
+                    updateDisplay();
+                    
+                    // Notificaciones especiales
+                    if (Math.floor(currentDay) !== Math.floor(currentDay - 0.01)) {
+                        const especie = especies[selectedSpecies];
+                        addNotification(`📅 Día ${Math.floor(currentDay)} - ${especie.nombre} ${especie.emoji}`);
+                        
+                        if (Math.floor(currentDay) === totalDays - 3) {
+                            addNotification(`⏰ ¡Eclosión próxima en 3 días! ${especie.emoji}`);
+                        } else if (Math.floor(currentDay) >= totalDays) {
+                            addNotification(`🎉 ¡ECLOSIÓN! ${especie.emoji} ${especie.nombre}`);
+                        }
+                    }
+                }
+            }, 1000);
+            
+            // Notificaciones periódicas simuladas
+            setInterval(() => {
+                if (!characteristic) {
+                    const notifications = [
+                        '🔥 Sistema de calefacción ajustado',
+                        '💧 Nivel de humedad controlado',
+                        '🔄 Volteo automático realizado',
+                        '📊 Monitoreo continuo activo',
+                        '🌡️ Temperatura estable',
+                        '💨 Ventilación optimizada'
+                    ];
+                    
+                    const randomNotification = notifications[Math.floor(Math.random() * notifications.length)];
+                    addNotification(randomNotification);
+                }
+            }, 30000);
+        }
+
+        // Función para mostrar información detallada de la especie
+        function showSpeciesInfo(index) {
+            const especie = especies[index];
+            const info = `
+                🐣 Especie: ${especie.nombre} ${especie.emoji}
+                📅 Días de incubación: ${especie.dias}
+                🌡️ Temperatura: ${especie.tempMin}°C - ${especie.tempMax}°C
+                💨 Humedad: Variable según especie
+                🔄 Volteo: Automático cada pocas horas
+            `;
+            addNotification(info);
+        }
+
+        // Detectar cambios de conexión Bluetooth
+        if ('bluetooth' in navigator) {
+            navigator.bluetooth.addEventListener('availabilitychanged', function(event) {
+                if (event.value) {
+                    addNotification('📱 Bluetooth disponible');
+                } else {
+                    addNotification('📱 Bluetooth no disponible');
+                }
+            });
+        } else {
+            addNotification('⚠️ Bluetooth Web API no soportada en este navegador');
+            addNotification('💡 Use Chrome, Edge o navegador compatible');
+        }
+
+        // Función de prueba para desarrolladores
+        function testNotifications() {
+            const testMessages = [
+                '🚀 Sistema iniciado para Gallina 🐔',
+                '📊 Estado: Gallina 🐔 - Día: 5/21',
+                '🌡️ Temp: 37.8°C - 💨 Humedad: 58%',
+                '🔥 Calefacción: ON - 💧 Humidificador: OFF',
+                '🔄 Volteo realizado - Posición: 135°',
+                '⏰ Eclosión próxima en 3 días 🐔',
+                '🎉 ¡ECLOSIÓN! 🐔 Gallina - Día 21/21'
+            ];
+            
+            testMessages.forEach((msg, index) => {
+                setTimeout(() => addNotification(msg), index * 2000);
+            });
+        }
+
+        // Agregar función de prueba al menú de desarrollador (F12)
+        console.log('🔧 Función de prueba disponible: testNotifications()');
+    </script>
+</body>
+</html>
